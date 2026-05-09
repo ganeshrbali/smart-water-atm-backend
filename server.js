@@ -1,23 +1,15 @@
 require("dotenv").config();
 
-
 const express = require("express");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
 const app = express();
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 app.use(cors());
 app.use(express.json());
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 app.get("/", (req, res) => {
   res.send("Smart Water ATM Backend Running");
@@ -28,56 +20,96 @@ app.post("/api/install-request", async (req, res) => {
 
   const { name, email, phone, address } = req.body;
 
-try {
-  await transporter.sendMail({
-    from: "ganeshrbali@gmail.com",
-    to: "ganeshrbali@gmail.com",
-    subject: "New Smart Water ATM Installation Request",
-    html: `
-      <h2>New Installation Request</h2>
-      <p><strong>Name:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Phone:</strong> ${phone}</p>
-      <p><strong>Address:</strong> ${address}</p>
-    `,
-  });
-    await transporter.sendMail({
-    from: "ganeshrbali@gmail.com",
-    to: email,
-    subject: "Smart Water ATM Installation Request Registered",
-    html: `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
+  try {
 
-        <h2 style="color:#2563eb;">SPARK INNOVATORS</h2>
+    // ADMIN EMAIL
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: "ganeshrbali@gmail.com",
+      subject: "New Smart Water ATM Installation Request",
 
-        <p>Dear ${name},</p>
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+        
+          <h2 style="color:#2563eb;">
+            New Installation Request
+          </h2>
 
-        <p>
-          Your installation request for the Smart Water ATM system
-          has been successfully registered.
-        </p>
+          <hr />
 
-        <p>
-          Our team will contact you shortly regarding installation
-          and further assistance.
-        </p>
+          <p><strong>Name:</strong> ${name}</p>
 
-        <hr />
+          <p><strong>Email:</strong> ${email}</p>
 
-        <h3>Customer Support</h3>
+          <p><strong>Phone:</strong> ${phone}</p>
 
-        <p><strong>Helpline:</strong> +91 7975671994</p>
-        <p><strong>Email:</strong> ganeshrbali@gmail.com</p>
+          <p><strong>Address:</strong> ${address}</p>
 
-        <br />
+        </div>
+      `,
+    });
 
-        <p>Regards,</p>
+    // CUSTOMER CONFIRMATION EMAIL
+    await resend.emails.send({
+      from: "onboarding@resend.dev",
+      to: email,
+      subject: "Smart Water ATM Installation Request Registered",
 
-        <h3>SPARK INNOVATORS TEAM</h3>
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6;">
 
-      </div>
-    `,
-  });
+          <h1 style="color:#2563eb;">
+            SPARK INNOVATORS
+          </h1>
+
+          <hr />
+
+          <p>Dear <strong>${name}</strong>,</p>
+
+          <p>
+            Thank you for registering your Smart Water ATM installation request.
+          </p>
+
+          <p>
+            Your request has been successfully received by our team.
+          </p>
+
+          <p>
+            Our technical team will contact you shortly regarding:
+          </p>
+
+          <ul>
+            <li>Installation process</li>
+            <li>Site verification</li>
+            <li>Pricing and setup</li>
+            <li>Technical assistance</li>
+          </ul>
+
+          <br />
+
+          <div style="background:#f3f4f6; padding:16px; border-radius:10px;">
+            <h3>Customer Support</h3>
+
+            <p><strong>Helpline:</strong> +91 7975671994</p>
+
+            <p><strong>Email:</strong> ganeshrbali@gmail.com</p>
+          </div>
+
+          <br />
+
+          <p>Regards,</p>
+
+          <h3 style="margin-bottom:0;">
+            SPARK INNOVATORS TEAM
+          </h3>
+
+          <p style="color:gray;">
+            Smart Water ATM Solutions
+          </p>
+
+        </div>
+      `,
+    });
 
     res.json({
       success: true,
@@ -85,6 +117,7 @@ try {
     });
 
   } catch (error) {
+
     console.error(error);
 
     res.status(500).json({
